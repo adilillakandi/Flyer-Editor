@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Flyer Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonts matching the elegant flyer design -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Gloock&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- html2canvas for image export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+
+  <style>
+    :root{
+      --bg:#f5f0e8;        /* warm cream background */
+      --ink:#8b4513;       /* rich brown text */
+      --accent:#a0522d;    /* sienna accents */
+      --muted:#8b7355;     /* muted brown text */
+      --light-accent:#d2b48c; /* tan for subtle elements */
+    }
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+    .page{
+      box-sizing:border-box;
+      width:816px;                 /* Letter portrait printable width at ~96dpi */
+      min-height:1056px;           /* Letter height */
+      margin:24px auto;
+      padding:60px 80px;
+      background:var(--bg);
+      position:relative;
+      border-radius:0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    /* Subtle background texture */
+    .page::after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(ellipse 70% 90% at 85% 60%, rgba(139,69,19,0.02), transparent 80%);
+      pointer-events:none;
+    }
+
+    header{ text-align:center; margin-bottom:36px; position:relative; z-index:1; }
+    .eyebrow{
+      font: 100 13px/1.5 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--muted);
+      letter-spacing:.02em;
+      margin-bottom:10px;
+    }
+    h1{
+      font-family: "Gloock", "Playfair Display", serif;
+      font-weight:300;
+      font-size:48px;
+      line-height:1.3;
+      letter-spacing:0.005em;
+      margin:0 auto 10px auto;
+      color:var(--accent);
+      max-width:740px;
+    }
+    .sub{
+      font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-weight:400;
+      font-size:16px;
+      line-height:1.6;
+      color:var(--muted);
+      text-align:center;
+      margin-bottom:28px;
+      letter-spacing:0.08em;
+    }
+
+    .lede, .body {
+      font: 400 15px/1.7 Inter, system-ui, sans-serif;
+      color:var(--muted);
+      margin:0 0 24px 0;
+      max-width:680px;
+      text-align:justify;
+    }
+
+    .section-title{
+      font:600 14px/1.6 Inter, system-ui, sans-serif;
+      letter-spacing:.08em;
+      color:var(--ink);
+      margin:32px 0 20px 0;
+    }
+
+    .list{
+      margin:20px 0 32px 0;
+      padding:0;
+      display:grid;
+      gap:18px;
+      max-width:700px;
+    }
+    .item{
+      display:grid;
+      grid-template-columns:20px 1fr;
+      align-items:flex-start;
+      gap:12px;
+    }
+    .dot{
+      width:6px; height:6px; border-radius:50%;
+      background:var(--accent);
+      margin-top:8px;
+      border:2px solid var(--accent);
+    }
+    .item h4{
+      margin:0 0 6px 0;
+      font: 600 14px/1.3 Inter, system-ui, sans-serif;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      color:var(--ink);
+    }
+    .item p{
+      margin:0;
+      font: 400 15px/1.6 Inter, system-ui, sans-serif;
+      color:var(--muted);
+    }
+
+    .cta-wrap{
+      margin:32px 0 12px 0;
+      text-align:center;
+    }
+    .cta{
+      appearance:none;
+      border:2px solid var(--accent);
+      background:transparent;
+      color:var(--accent);
+      font:600 14px/1 Inter, system-ui, sans-serif;
+      letter-spacing:.08em;
+      padding:10px 28px;
+      border-radius:10px; /* rounded corners like the image */
+      cursor:pointer;
+      transition:all 0.2s ease;
+      text-transform:uppercase;
+    }
+    .cta:hover{
+      background:var(--accent);
+      color:var(--bg);
+    }
+    .promo{
+      margin-top:10px;
+      font: 400 14px/1.6 Inter, system-ui, sans-serif;
+      color:var(--muted);
+    }
+
+    .tagline{
+      margin:18px 0 22px 0;
+      font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-weight:400;
+      font-size:22px;
+      line-height:1.5;
+      color:var(--accent);
+      letter-spacing:.06em;
+    }
+
+    footer{
+      margin-top:32px;
+      font: 400 15px/1.8 Inter, system-ui, sans-serif;
+      color:var(--muted);
+    }
+
+    .footer-text{
+      margin-bottom: 0;
+    }
+
+    .footer-text1{
+      margin-top: -8px;
+    }
+
+    .toolbar{
+      position:sticky; top:0; z-index:5;
+      display:flex; gap:10px; justify-content:center;
+      padding:10px; background:rgba(243,227,214,0.85);
+      backdrop-filter:saturate(1.2) blur(2px);
+      border-bottom:1px solid rgba(0,0,0,0.06);
+    }
+    .toolbtn{
+      border:1px solid rgba(0,0,0,0.12);
+      background:#fff;
+      color:#333;
+      font:600 12.5px/1 Inter, system-ui, sans-serif;
+      padding:8px 12px; border-radius:8px; cursor:pointer;
+    }
+
+    /* Make main text editable */
+    [contenteditable="true"]{ outline: none; caret-color: var(--accent);}
+    [contenteditable="true"]:focus{ box-shadow: inset 0 0 0 2px rgba(164,91,67,.18); border-radius:6px; }
+
+    /* Print styles for crisp PDF via html2pdf/jsPDF */
+    @media print{
+      body{ background:white; }
+      .page{ box-shadow:none; margin:0; width:auto; min-height:auto; }
+      .toolbar{ display:none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Simple toolbar -->
+  <div class="toolbar">
+    <button class="toolbtn" onclick="downloadImage()">Download Image</button>
+  </div>
+
+  <!-- Editable flyer -->
+  <main id="flyer" class="page">
+    <header>
+      <h1 contenteditable="true">Brainwave Optimization for <br/> the Modern Mind</h1>
+      <p class="sub" contenteditable="true">
+        Non-invasive, risk-free brain training.
+      </p>
+    </header>
+
+    <p class="lede" contenteditable="true">
+      Printers in the 1500s scrambled the words from Cicero’s “De Finibus Bonorum et Malorum” after mixing the words in each sentence. The familiar “lorem ipsum dolor sit amet” text emerged when 16th‑century printers adapted Cicero’s original work, beginning with the phrase “dolor sit amet consectetur.” 
+    </p>
+
+    <p class="body" contenteditable="true">
+      They abbreviated “dolorem” (meaning “pain”) to “lorem,” which carries no meaning in Latin. “Ipsum” translates to “itself,” and the text frequently includes phrases such as “consectetur adipiscing elit” and “ut labore et dolore.” These Latin fragments are derived from classical sources and repurposed as dummy copy. 
+    </p>
+
+    <div class="section-title">We cater to:</div>
+    <div class="list">
+      <div class="item">
+        <div class="dot"></div>
+        <div>
+          <h4 contenteditable="true">Executives & Entrepreneurs</h4>
+          <p contenteditable="true">Sharper decisions, steadier energy, deeper focus under pressure.</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="dot"></div>
+        <div>
+          <h4 contenteditable="true">Parents & Kids</h4>
+          <p contenteditable="true">Less stress, more balance, better sleep and learning support.</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="dot"></div>
+        <div>
+          <h4 contenteditable="true">Athletes & Performers</h4>
+          <p contenteditable="true">Faster recovery, sharper reactions, and a competitive edge.</p>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="dot"></div>
+        <div>
+          <h4 contenteditable="true">Wellness Enthusiasts</h4>
+          <p contenteditable="true">Deeper calm, clearer mind, and longevity.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="body" contenteditable="true">
+      Printers in the 1500s scrambled the words from Cicero’s “De Finibus Bonorum et Malorum” after mixing the words in each sentence. The “amet” text emerged when 16th‑century printers adapted Cicero’s original work, beginning with the phrase “dolor sit amet consectetur.” 
+    </p>
+
+    <div class="cta-wrap">
+      <button class="cta"><span class="cta-label" contenteditable="true">BOOK NOW</span></button>
+      <div class="promo" contenteditable="true">Use promo code MT25</div>
+    </div>
+
+    <div class="tagline" contenteditable="true">Upgrade your mind, not just your device.</div>
+
+    <footer contenteditable="true">
+      <p class="footer-text">Till then,</p>
+      <p class="footer-text1">Shaiimmu</p>
+    </footer>
+  </main>
+
+  <script>
+    // Export the flyer node to high-quality image
+    async function downloadImage(){
+      const node = document.getElementById('flyer');
+
+      // Workaround: temporarily remove focus outline while exporting
+      const focused = document.activeElement;
+      if (focused) focused.blur();
+
+      try {
+        const canvas = await html2canvas(node, {
+          scale: 3,                    // High resolution for crisp image
+          useCORS: true,              // Handle cross-origin images
+          allowTaint: false,          // Prevent tainted canvas
+          backgroundColor: '#f5f0e8', // Match page background
+          width: node.offsetWidth,
+          height: node.offsetHeight,
+          scrollX: 0,
+          scrollY: 0
+        });
+
+        // Convert canvas to blob and download
+        canvas.toBlob(function(blob) {
+          const link = document.createElement('a');
+          link.download = 'brainwave-flyer.png';
+          link.href = URL.createObjectURL(blob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }, 'image/png', 1.0);
+
+      } catch (error) {
+        console.error('Error generating image:', error);
+        alert('Error generating image. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>
